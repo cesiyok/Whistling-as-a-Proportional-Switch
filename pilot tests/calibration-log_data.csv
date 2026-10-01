@@ -1,0 +1,15 @@
+Participant,Type,Accepted,MeasuredValue,Trial1,Trial2,Trial3,Frames1,Frames2,Frames3,MinMidi,MaxMidi,PitchSpanSemitones,MinAmplitude,MaxAmplitude,IntensityRangeDb,Device,SampleRateMultiplier
+1,MinPitch,1,82.276527,82.065483,82.356133,82.407974,108,106,103,82.277,,,,,,Microphone Array (Realtek(R) Audio),1
+1,MaxPitch,1,98.52774,98.477722,98.484459,98.621033,101,112,109,82.277,98.528,16.251,,,,Microphone Array (Realtek(R) Audio),1
+1,MinIntensity,1,0.001817,0.001595,0.002365,0.001491,69,106,98,82.277,98.528,16.251,0.001817,,,Microphone Array (Realtek(R) Audio),1
+1,MaxIntensity,1,0.014098,0.013347,0.012895,0.016051,114,115,120,82.277,98.528,16.251,0.001817,0.014098,17.8,Microphone Array (Realtek(R) Audio),1
+1,MaxIntensity,1,0.026748,0.019817,0.024774,0.035654,117,111,63,82.277,98.528,16.251,0.001817,0.026748,23.36,Microphone Array (Realtek(R) Audio),1
+1,MaxIntensity,1,0.047065,0.055789,0.044399,0.041006,65,70,64,82.277,98.528,16.251,0.001817,0.047065,28.27,Microphone Array (Realtek(R) Audio),1
+2,MinPitch,1,80.884399,81.852119,80.011658,80.789429,106,84,90,80.884,,,,,,Microphone Array (Realtek(R) Audio),1
+2,MaxPitch,1,99.908623,99.906319,100.02494,99.794617,116,105,117,80.884,99.909,19.024,,,,Microphone Array (Realtek(R) Audio),1
+2,MinIntensity,1,0.002801,0.003263,0.002959,0.00218,84,111,107,80.884,99.909,19.024,0.002801,,,Microphone Array (Realtek(R) Audio),1
+2,MaxIntensity,1,0.059068,0.045998,0.043878,0.087328,115,112,77,80.884,99.909,19.024,0.002801,0.059068,26.48,Microphone Array (Realtek(R) Audio),1
+3,MinPitch,1,82.822075,83.155937,82.878845,82.431435,104,102,89,82.822,,,,,,Microphone Array (Realtek(R) Audio),1
+3,MaxPitch,1,94.530121,94.675797,94.956116,93.958458,84,118,110,82.822,94.53,11.708,,,,Microphone Array (Realtek(R) Audio),1
+3,MinIntensity,1,0.001599,0.001606,0.001797,0.001392,100,75,102,82.822,94.53,11.708,0.001599,,,Microphone Array (Realtek(R) Audio),1
+3,MaxIntensity,1,0.086059,0.10604,0.072281,0.079858,70,87,85,82.822,94.53,11.708,0.001599,0.086059,34.62,Microphone Array (Realtek(R) Audio),1
