@@ -13,7 +13,8 @@ folder. The scripts are licensed under the MIT License (`LICENSE`).
 | `maintenance_tracking.py` | Sections V-A to V-C, Tables 1–4, Appendix F-B |
 | `mixed_models.py` | Models for maintenance success and for practice effects: Appendix F-A and F-E, Table 12 |
 | `subjective_and_range.py` | Subjective measures and calibration: Table 5, Sections V-A, V-D, V-E and V-G, Appendix A-H, and the recency rows of Table 13 |
-| `range_associations.py` | Calibrated range and the channel differences, with confidence intervals and the comparison of dependent correlations: Section V-G |
+| `range_associations.py` | Calibrated range and the channel differences, with confidence intervals, the comparison of dependent correlations, and amplitude variability in force points and in dB (shared normalization): Section V-G |
+| `designated_tests.py` | The nine designated tests of H1–H4 with the Holm correction across them and the decision rule: Section IV-H, Appendix F-G, Table 14 |
 | `checks_and_openloop.py` | Data-integrity, order, fatigue and recency checks, open-loop production noise, session log and pilot measurements: Sections V-A and V-D, Appendix F-F (Table 13), Appendix G |
 | `near_break_analysis.py` | Trials closest to a break: Appendix F-C, Table 10 |
 | `sensitivity_sweep.py` | All 33 scoring configurations: Appendix E, Table 9 |

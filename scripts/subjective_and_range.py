@@ -37,12 +37,12 @@ Definitions
   * Wilcoxon signed-rank test, pitch vs intensity over the 24 participants.
     Zero differences are dropped (Wilcoxon's method); n is the number of
     non-zero differences and W the smaller of the two signed-rank sums, tied
-    |differences| taking their mean rank. Z is the normal approximation
-    without tie or continuity correction,
-        Z = (W - n(n+1)/4) / sqrt(n(n+1)(2n+1)/24),
-    so Z <= 0, and r = |Z| / sqrt(N) with N = 24 (all participants); p is
-    two-sided from Z. Z and p with the variance corrected for tied ranks
-    are printed beside them (Z_ties, p_ties).
+    |differences| taking their mid-rank. p is exact: the two-sided
+    probability of the signed-rank sum over all 2^n sign patterns of the n
+    non-zero differences, given their ranks. Z is the normal score with the
+    variance corrected for tied ranks (t = size of each group of ties),
+        Z = (W - n(n+1)/4) / sqrt(n(n+1)(2n+1)/24 - sum(t^3 - t)/48),
+    so Z <= 0, and r = |Z| / sqrt(N) with N = 24 (all participants).
   * Channel x Task ANOVA on raw TLX (2 x 2, within participants): every
     effect has one degree of freedom, so F(1, 23) is the square of the
     one-sample t of its contrast over participants, and
@@ -220,13 +220,21 @@ def wilcoxon(a, b):
     rk = stats.rankdata(np.abs(nz))
     w = min(rk[nz > 0].sum(), rk[nz < 0].sum())
     mu = n * (n + 1) / 4.0
-    var = n * (n + 1) * (2 * n + 1) / 24.0
     _, tie = np.unique(rk, return_counts=True)
-    var_t = var - (tie ** 3 - tie).sum() / 48.0
-    z = (w - mu) / math.sqrt(var)
-    zt = (w - mu) / math.sqrt(var_t)
-    return dict(n=n, W=w, Z=z, p=2 * stats.norm.sf(abs(z)), r=abs(z) / math.sqrt(len(d)),
-                Zt=zt, pt=2 * stats.norm.sf(abs(zt)))
+    var_t = n * (n + 1) * (2 * n + 1) / 24.0 - (tie ** 3 - tie).sum() / 48.0
+    z = (w - mu) / math.sqrt(var_t)
+    # exact null distribution of the signed-rank sum: doubled ranks are integers
+    r2 = np.rint(2 * rk).astype(int)
+    dist = np.zeros(r2.sum() + 1)
+    dist[0] = 1.0
+    for k in r2:
+        nxt = dist.copy()
+        nxt[k:] += dist[:dist.size - k]
+        dist = nxt
+    dist /= dist.sum()
+    s2 = np.arange(dist.size)
+    p = min(1.0, dist[np.abs(s2 - 2 * mu) >= abs(2 * w - 2 * mu) - 1e-9].sum())
+    return dict(n=n, W=w, Z=z, p=p, r=abs(z) / math.sqrt(len(d)))
 
 
 def paired(a, b):
@@ -327,13 +335,13 @@ def section_subjective(tlx, sus, pref, counts, book):
 
     print()
     print("   Table 5: M +- SD by channel (TLX: mean of the channel's two blocks); Wilcoxon signed-rank")
-    print("   %-24s %15s %15s %7s %8s %5s %4s %7s %8s  %s"
-          % ("measure", "pitch", "intensity", "Z", "p", "r", "n", "Z_ties", "p_ties", "pitch lower load"))
+    print("   %-24s %15s %15s %7s %9s %5s %4s  %s"
+          % ("measure", "pitch", "intensity", "Z", "p exact", "r", "n", "pitch lower load"))
 
     def line(label, a, b, lower):
         w = wilcoxon(a, b)
-        print("   %-24s %s %s %7.2f %8s %5.2f %4d %7.2f %8s  %s"
-              % (label, msd(a), msd(b), w["Z"], fp(w["p"]), w["r"], w["n"], w["Zt"], fp(w["pt"]), lower))
+        print("   %-24s %s %s %7.2f %9s %5.2f %4d  %s"
+              % (label, msd(a), msd(b), w["Z"], fp(w["p"]), w["r"], w["n"], lower))
 
     for key, label in (("Raw", "Raw TLX (0-100)"),) + SUBSCALES:
         a, b = chan(key, "pitch"), chan(key, "intensity")

@@ -2,7 +2,9 @@
 
 Reads from the data package:
     <DATA_DIR>/participant tests/calibration-log_data.csv
+    <DATA_DIR>/participant tests/openloop-log_data.csv
     <DATA_DIR>/participant tests/pa<N>_<channel>_<task>_data.csv   (N = 1..24)
+    <DATA_DIR>/participant tests/pa<N>_intensity_maintenance_raw_data.csv
 
 Usage:
     python range_associations.py [DATA_DIR]
@@ -17,6 +19,17 @@ Pearson correlations are given with Fisher-z 95 % CIs. Two correlations that
 share the calibrated range are compared with Steiger's (1980) Z test for
 dependent, overlapping correlations, and with a participant bootstrap of their
 difference (10000 resamples, fixed seed).
+
+Shared normalization: a variability in force points is the same variability in
+dB multiplied by 100 / R, R being the calibrated range, so it is tied to R by
+the mapping itself. Section 3 therefore repeats the associations with the
+variability in dB, which does not depend on R:
+  * open-loop amplitude SD: mean over the three open-loop segments of AmpSdDb
+    (dB) and AmpSdPoints (force points);
+  * maintenance amplitude SD: per intensity maintenance trial the SD (ddof 0)
+    of 20 log10(Amplitude) over the valid ticks (Amplitude > 0) of the scoring
+    window (TimeMs >= 1000), as in Table 11, averaged over the participant's
+    trials; and the force-point SD of the per-trial files.
 """
 import os
 import sys
@@ -34,18 +47,34 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(newline="\n")
 
 
+def amplitude_sd_db(pid):
+    """Mean over the intensity maintenance trials of the within-trial SD of the dB reading."""
+    raw = pd.read_csv(os.path.join(PT, "pa%d_intensity_maintenance_raw_data.csv" % pid),
+                      float_precision="round_trip")
+    sds = []
+    for _, tr in raw.groupby("Trial"):
+        a = tr.loc[(tr["TimeMs"] >= 1000) & (tr["Amplitude"] > 0), "Amplitude"].to_numpy(np.float64)
+        sds.append(np.std(20.0 * np.log10(a)))
+    return float(np.mean(sds))
+
+
 def load():
     cal = pd.read_csv(os.path.join(PT, "calibration-log_data.csv"))
+    ol = pd.read_csv(os.path.join(PT, "openloop-log_data.csv"))
     rows = []
     for pid in PIDS:
         g = cal[(cal["Participant"] == "pa%d" % pid) & (cal["Accepted"] == 1)
                 & cal["Type"].str.contains("Intensity")]
-        r = {"range_db": float(g["IntensityRangeDb"].iloc[-1])}
+        o = ol[ol["Participant"] == "pa%d" % pid]
+        r = {"range_db": float(g["IntensityRangeDb"].iloc[-1]),
+             "openloop_sd_db": o["AmpSdDb"].mean(), "openloop_sd_points": o["AmpSdPoints"].mean(),
+             "maint_sd_db_intensity": amplitude_sd_db(pid)}
         for ch in ("pitch", "intensity"):
             m = pd.read_csv(os.path.join(PT, "pa%d_%s_maintenance_data.csv" % (pid, ch)))
             t = pd.read_csv(os.path.join(PT, "pa%d_%s_tracking_data.csv" % (pid, ch)))
             r["maint_success_" + ch] = 100 * m["Success"].mean()
             r["maint_tib_" + ch] = 100 * m["TIB"].mean()
+            r["maint_sd_points_" + ch] = m["SD"].mean()
             r["track_tib_" + ch] = 100 * t["TIB"].mean()
             r["track_r_" + ch] = t["PearsonR"].mean()
         rows.append(r)
@@ -96,6 +125,18 @@ def main():
         print("   r(range, %s) - r(range, %s) = %+.3f  bootstrap 95%% CI [%+.2f, %+.2f];"
               "  r between the two = %+.3f;  Steiger Z = %+.2f  p = %.4f"
               % (a, b, r12 - r13, lo, hi, r23, z, p))
+    print()
+    print("3. Shared normalization: amplitude variability in force points (= dB x 100 / range) and in dB")
+    print("   open-loop amplitude SD: M %.2f dB (SD %.2f), %.2f points; maintenance amplitude SD: M %.2f dB (SD %.2f)"
+          % (d["openloop_sd_db"].mean(), d["openloop_sd_db"].std(), d["openloop_sd_points"].mean(),
+             d["maint_sd_db_intensity"].mean(), d["maint_sd_db_intensity"].std()))
+    for key in ("openloop_sd_points", "openloop_sd_db", "maint_sd_points_intensity", "maint_sd_db_intensity"):
+        r, lo, hi, p = corr_ci(x, d[key].values)
+        print("   r(range, %-26s) = %+.3f  95%% CI [%+.2f, %+.2f]  p = %.3f" % (key, r, lo, hi, p))
+    for key in ("openloop_sd_points", "openloop_sd_db"):
+        for y in ("maint_tib_intensity", "maint_sd_points_intensity", "maint_sd_db_intensity"):
+            r, lo, hi, p = corr_ci(d[key].values, d[y].values)
+            print("   r(%-18s, %-26s) = %+.3f  95%% CI [%+.2f, %+.2f]  p = %.3f" % (key, y, r, lo, hi, p))
 
 
 if __name__ == "__main__":

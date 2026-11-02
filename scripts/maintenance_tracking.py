@@ -45,9 +45,11 @@ Definitions
   * Channel comparison: paired t on the participant means over the cells,
     pitch - intensity, with its 95% CI and d_z = mean / SD of the
     differences. Wilcoxon signed-rank test on the same means: zero
-    differences dropped, average ranks for ties, Z from the normal
-    approximation without tie correction, with the sign of pitch - intensity,
-    r = |Z| / sqrt(24); p from scipy.stats.wilcoxon with its default method.
+    differences dropped, mid-ranks for tied absolute differences; p is exact,
+    the two-sided probability of W+ over all 2^n sign patterns of the n
+    non-zero differences given their ranks; Z is the normal score of W+ with
+    the variance corrected for ties, with the sign of pitch - intensity, and
+    r = |Z| / sqrt(24).
   * Simple effects: paired t per target (rate); Holm step-down over the
     targets (rates) of one metric.
   * Rate slopes (Appendix F-B): least-squares slope of each participant's
@@ -263,15 +265,32 @@ def paired(a, b):
 
 
 def signed_rank(a, b):
-    """Wilcoxon signed-rank test of a - b: Z, p, r = |Z| / sqrt(N), N."""
+    """Wilcoxon signed-rank test of a - b: Z, p, r = |Z| / sqrt(N), N.
+
+    Zero differences are dropped and tied |differences| take mid-ranks. p is
+    exact: the null distribution of W+ is built over all 2^n sign patterns of
+    the n non-zero differences (doubled ranks are integers, so the distribution
+    is a convolution). Z uses the variance corrected for tied ranks.
+    """
     d = np.asarray(a, np.float64) - np.asarray(b, np.float64)
     nz = d[d != 0]
     n = nz.size
     ranks = stats.rankdata(np.abs(nz))
     w_plus = ranks[nz > 0].sum()
-    var = n * (n + 1) * (2 * n + 1) / 24.0
-    z = (w_plus - n * (n + 1) / 4.0) / math.sqrt(var)
-    p = stats.wilcoxon(nz).pvalue
+    mu = n * (n + 1) / 4.0
+    _, tie = np.unique(ranks, return_counts=True)
+    var = n * (n + 1) * (2 * n + 1) / 24.0 - (tie ** 3 - tie).sum() / 48.0
+    z = (w_plus - mu) / math.sqrt(var)
+    r2 = np.rint(2 * ranks).astype(int)
+    dist = np.zeros(r2.sum() + 1)
+    dist[0] = 1.0
+    for k in r2:
+        nxt = dist.copy()
+        nxt[k:] += dist[:dist.size - k]
+        dist = nxt
+    dist /= dist.sum()
+    s2 = np.arange(dist.size)
+    p = min(1.0, dist[np.abs(s2 - 2 * mu) >= abs(2 * w_plus - 2 * mu) - 1e-9].sum())
     return {"Z": z, "p": p, "r": abs(z) / math.sqrt(d.size), "n": n}
 
 
