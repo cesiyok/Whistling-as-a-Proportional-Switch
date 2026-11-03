@@ -660,7 +660,7 @@ def maintenance(maint, title_suffix=""):
                 "%s %s" % (ch, " ".join("%d:%d-%d" % (tg, n.loc[(ch, tg)].min(), n.loc[(ch, tg)].max())
                                        for tg in TARGETS)) for ch in CHANNELS)))
 
-    # Figure 4: the trial whose SD is closest to the channel median at target 60.
+    # Fig. 6 (file fig4_traces.png): the trial whose SD is closest to the channel median at target 60.
     for ch in CHANNELS:
         d = maint[(maint.ch == ch) & (maint.Target == 60)]
         med = d["SD"].median()
@@ -670,7 +670,7 @@ def maintenance(maint, title_suffix=""):
         g = raw[raw.Trial == row.Trial]
         f, t = g["Force"].to_numpy(float), g["TimeMs"].to_numpy(float)
         first = t[np.argmax(f > 0)] if (f > 0).any() else float("nan")
-        rep.line("fig4_%s" % ch, "Figure 4, %-9s: %s trial %d, SD %.2f (median %.2f), TIB %.2f; "
+        rep.line("fig4_%s" % ch, "Fig. 6, %-9s: %s trial %d, SD %.2f (median %.2f), TIB %.2f; "
                  "force first above 0 at %.0f ms" % (ch, row.pid, row.Trial, row.SD, med,
                                                       row.TIB, first))
     return rep, cube
